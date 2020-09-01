@@ -993,12 +993,26 @@ public class PluginManager {
                 try (CloseableHttpResponse ignored = httpclient.execute(httphead, context)) {
                     HttpHost target = context.getTargetHost();
                     List<URI> redirectLocations = context.getRedirectLocations();
+                    if (redirectLocations != null) {
+                        for (URI redirectLocation: redirectLocations) {
+                            if (redirectLocation != null) {
+                                logVerbose(String.format("Redirect location: %s", redirectLocation));
+                            } else {
+                                logVerbose(String.format("Redirect location is null"));
+                            }
+                        }
+                    } else {
+                        logVerbose("redirectLocations is null");
+                    }
                     // Expected to be an absolute URI
                     URI location = URIUtils.resolve(httphead.getURI(), target, redirectLocations);
+                    logVerbose(String.format("Selected location: %s", location.toURL().toString()));
                     FileUtils.copyURLToFile(location.toURL(), pluginFile);
-                } catch (URISyntaxException | IOException e) {
-                    logVerbose(String.format("Unable to resolve plugin URL %s, or download plugin %s to file",
-                            urlString, plugin.getName()));
+                } catch (URISyntaxException e) {
+                    logVerbose(String.format("Invalid URI %s", urlString));
+                    success = false;
+                } catch (IOException e) {
+                    logVerbose(String.format("Unable to download plugin %s from %s", plugin.getName(), urlString));
                     success = false;
                 }
             } catch (IOException e) {
